@@ -1,4 +1,4 @@
-![Image](https://github.com/sikandarqaisar/CloudFormation-MYSQLWebApplication/blob/master/image.jpg)
+![Image](https://github.com/sikandarqaisar/CloudFormation-MYSQLWebApplication/blob/master/Untitled Diagram.png)
 ### STEP1:-
 - Run VPC.yaml Stack.
 
