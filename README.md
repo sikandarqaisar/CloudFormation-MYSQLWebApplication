@@ -1,4 +1,4 @@
-<img src= "https://github.com/sikandarqaisar/CloudFormation-MYSQLWebApplication/blob/master/image.jpg" width="800" height="600">
+<img src= "https://github.com/sikandarqaisar/CloudFormation-MYSQLWebApplication/blob/master/image.jpg" width="600" height="500">
 
 ### STEP 1:-
 - Run VPC.yaml Stack.
