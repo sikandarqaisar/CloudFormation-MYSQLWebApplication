@@ -1,0 +1,91 @@
+Mappings: 
+  RegionMap: 
+    us-east-1: 
+      "HVM64": "ami-0a313d6098716f372"
+    us-east-2: 
+      "HVM64": "ami-0c55b159cbfafe1f0"
+    us-west-1: 
+      "HVM64": "ami-06397100adf427136"
+    us-west-2: 
+      "HVM64": "ami-005bdb005fb00e791"
+    ap-south-1: 
+      "HVM64": "ami-007d5db58754fa284"
+    ap-southeast-1: 
+      "HVM64": "ami-0dad20bd1b9c8c004"
+    ap-southeast-2: 
+      "HVM64": "ami-0b76c3b150c6b1423"
+    ap-northeast-1: 
+      "HVM64": "ami-0eb48a19a8d81e20b"
+    ca-central-1: 
+      "HVM64": "ami-01b60a3259250381b"
+    eu-west-1: 
+      "HVM64": "ami-08d658f84a6d84a80"
+Parameters:
+  key:
+    Description : Name of an existing EC2 key pair for SSH access to the EC2 instance
+    Type: AWS::EC2::KeyPair::KeyName
+    Default: sikandar-Key-pair-Ohio
+Resources:
+  privateInstance1:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", HVM64]
+      InstanceType: t2.micro
+      UserData:
+        Fn::Base64: !Sub |
+          #!/bin/bash
+          set -x
+          sleep 2m
+          apt-get -y update
+          apt-get install mysql-server -y
+          apt-get install php-mysql -y
+          ufw enable 
+          ufw allow mysql
+          ufw allow ssh
+          systemctl restart ufw 
+          systemctl start mysql
+          systemctl enable mysql
+          sed -i 's/127.0.0.1/0.0.0.0/g' /etc/mysql/mysql.conf.d/mysqld.cnf
+          mysql -u root 
+          mysql -u root -e "CREATE DATABASE testdb;"
+          mysql -u root -e "USE testdb;"
+          mysql -u root -e "CREATE USER 'test'@'%' IDENTIFIED BY 'sikandar';"
+          mysql -u root -e "GRANT ALL PRIVILEGES ON * . * TO 'test'@'%';"
+          mysql -u root -e "FLUSH PRIVILEGES;"
+          mysql -u root -e "exit;"
+          mysql -u test -psikandar ;
+          mysql -u test -psikandar -e "USE testdb;"
+          mysql -u test -psikandar << EOF 
+          USE testdb;
+          CREATE TABLE users (
+          id INT(11) UNSIGNED AUTO_INCREMENT PRIMARY KEY,firstname VARCHAR(30) NOT NULL,lastname VARCHAR(30) NOT NULL,email VARCHAR(50) NOT NULL,age INT(3),location VARCHAR(50),date TIMESTAMP );
+          exit;
+          EOF
+          systemctl restart mysql
+      KeyName:
+        Ref: key
+      SubnetId:
+        Fn::ImportValue: sikandarStack-Subnet2
+      SecurityGroupIds: 
+        - !ImportValue sikandarStack-PrivateSecurityGroup
+      Tags:
+        - Key: Name
+          Value: sikadnarDBIns
+
+
+
+
+
+
+Outputs:
+  privateInstance:
+    Description: A reference to the created privateInstance
+    Value: !Ref privateInstance1
+    Export:
+      Name: !Sub "sikandarStack-privateIns"                
+
+  PrivateInsIp:
+    Value: !GetAtt privateInstance1.PrivateIp
+    Export:
+      Name: !Sub "PrivateInsIp"
+

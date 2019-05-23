@@ -1,0 +1,354 @@
+Description: VPC Network Stack
+Parameters:
+  CidrBlock:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.0.0/16
+    Description: VPC CIDR Block (eg 10.0.0.0/16)
+    Type: String
+  AvailabilityZone1:
+    Description: The AvailabilityZone to use for the first subnet
+    Default: us-east-2a
+    Type: AWS::EC2::AvailabilityZone::Name
+  AvailabilityZone2:
+    Description: The AvailabilityZone to use for the second subnet
+    Default: us-east-2b
+    Type: AWS::EC2::AvailabilityZone::Name
+  AvailabilityZone3:
+    Description: The AvailabilityZone to use for the second subnet
+    Default: us-east-2c
+    Type: AWS::EC2::AvailabilityZone::Name
+  PublicSubnetCidr:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.0.0/24
+    Description: VPC CIDR Block for the public subnet (eg 10.0.0.0/24)
+    Type: String
+  PrivateSubnetCidr:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.1.0/24
+    Description: VPC CIDR for the private subnet (eg 10.0.0.0/24) 
+    Type: String
+  PublicSubnetCidr2:
+    AllowedPattern: '((\d{1,3})\.){3}\d{1,3}/\d{1,2}'
+    Default: 10.0.2.0/24
+    Description: VPC CIDR for the private subnet (eg 10.0.0.0/24) 
+    Type: String
+
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock:
+        Ref: CidrBlock
+      EnableDnsHostnames: true
+      EnableDnsSupport: true
+      Tags:
+        - Key: Name
+          Value: sikandarStack
+
+
+  Subnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: {Ref: AvailabilityZone1}
+      CidrBlock: {Ref: PublicSubnetCidr}
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - [{Ref: 'AWS::StackName'},{Ref: AvailabilityZone1}]
+      VpcId:   
+        Ref: VPC
+
+
+
+  Subnet2:
+    Type: AWS::EC2::Subnet
+    Properties: 
+      AvailabilityZone: {Ref: AvailabilityZone2}
+      CidrBlock: {Ref: PrivateSubnetCidr}
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - [{Ref: 'AWS::StackName'},{Ref: 'AvailabilityZone2'}]
+      VpcId:   
+        Ref: VPC
+
+
+  Subnet3:
+    Type: AWS::EC2::Subnet
+    Properties:
+      AvailabilityZone: {Ref: AvailabilityZone3}
+      CidrBlock: {Ref: PublicSubnetCidr2}
+      MapPublicIpOnLaunch: true
+      Tags:
+        - Key: Name
+          Value:
+            Fn::Join:
+              - '-'
+              - [{Ref: 'AWS::StackName'},{Ref: AvailabilityZone3}]
+      VpcId:   
+        Ref: VPC
+
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: sikandarStack
+
+
+
+  GatewayAttachment:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId:
+        Ref: InternetGateway
+      VpcId:
+        Ref: VPC
+
+
+
+  RouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId:
+        Ref: VPC
+      Tags:
+        - Key: Name
+          Value: sikandarStack
+
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId:
+        Ref: InternetGateway           
+      RouteTableId:
+        Ref: RouteTable
+
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    DependsOn: GatewayAttachment
+    Properties:
+      Domain: vpc 
+       
+ 
+
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: !Ref Subnet1    
+
+
+
+
+
+  SubnetAssoc1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: RouteTable
+      SubnetId:
+        Ref: Subnet1
+
+
+
+
+
+
+   
+  PrivateRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      Tags:
+        - Key: Name
+          Value: {Ref: 'AWS::StackName'}
+      VpcId:
+        Ref: VPC  
+
+
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId:
+        Ref: NatGateway           
+      RouteTableId:
+        Ref: PrivateRouteTable
+
+
+
+
+  
+  SubnetAssoc2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: PrivateRouteTable
+      SubnetId:
+        Ref: Subnet2
+
+
+
+
+
+
+
+  SubnetAssoc3:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId:
+        Ref: RouteTable
+      SubnetId:
+        Ref: Subnet3
+
+
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 39.32.213.0/24
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0    
+      Tags:
+        - Key: Name
+          Value: sikandarStack
+
+  PublicSecurityGroupIns:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !GetAtt "PublicSecurityGroup.GroupId"
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: sikandarStack
+
+
+ 
+  
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow ssh to client host
+      VpcId:
+        Ref: VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.0.0/24
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 10.0.2.0/24          
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.0.0/24
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.2.0/24
+      Tags:
+        - Key: Name
+          Value: sikandarStack          
+
+
+
+
+
+
+
+
+
+
+Outputs:
+ SubnetValue1:
+   Description: A reference to the created PublicSubnets
+   Value: !Ref Subnet1
+   Export:
+      Name: !Sub "sikandarStack-Subnet1"      
+
+ SubnetValue2:
+   Description: A reference to the created PublicSubnets
+   Value: !Ref Subnet2
+   Export:
+      Name: !Sub "sikandarStack-Subnet2"
+
+ SubnetValue3:
+   Description: A reference to the created PublicSubnets
+   Value: !Ref Subnet3
+   Export:
+      Name: !Sub "sikandarStack-Subnet3"
+
+
+ PublicSecurityGroup:
+   Description: A reference to the created PublicSecurityGroup
+   Value: !Ref PublicSecurityGroup
+   Export:
+      Name: !Sub "sikandarStack-PublicSecurityGroup"
+
+ PublicSecurityGroup1:
+   Description: A reference to the created PublicSecurityGroup
+   Value: !Ref PublicSecurityGroupIns
+   Export:
+      Name: !Sub "sikandarStack-PublicSecurityGroupIns"
+
+
+ PrivateSecurityGroup:
+   Description: A reference to the created PublicSecurityGroup
+   Value: !Ref PrivateSecurityGroup
+   Export:
+      Name: !Sub "sikandarStack-PrivateSecurityGroup"            
+
+ AvailabilityZone1:
+   Description: A reference to the created AvailabilityZone1
+   Value: !Ref AvailabilityZone1
+   Export:
+      Name: !Sub "sikandarStack-AvailabilityZone1"
+
+ AvailabilityZone2:
+   Description: A reference to the created AvailabilityZone2
+   Value: !Ref AvailabilityZone2
+   Export:
+      Name: !Sub "sikandarStack-AvailabilityZone2"
+
+
+ AvailabilityZone3:
+   Description: A reference to the created AvailabilityZone3
+   Value: !Ref AvailabilityZone3
+   Export:
+      Name: !Sub "sikandarStack-AvailabilityZone3"      
