@@ -65,6 +65,7 @@ Resources:
 
 
 
+
   Subnet2:
     Type: AWS::EC2::Subnet
     Properties: 
