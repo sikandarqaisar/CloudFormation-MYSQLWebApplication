@@ -351,4 +351,5 @@ Outputs:
    Description: A reference to the created AvailabilityZone3
    Value: !Ref AvailabilityZone3
    Export:
-      Name: !Sub "sikandarStack-AvailabilityZone3"      
+      Name: !Sub "sikandarStack-AvailabilityZone3" 
+      
