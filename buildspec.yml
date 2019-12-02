@@ -1,1 +1,4 @@
-echo 'hello World'
+version: 0.2         
+phases:
+  build:
+    commands:
