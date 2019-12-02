@@ -1,8 +1,16 @@
 version: 0.2
 phases:
+
+env:
+  variables:
+    key: "value"
+  parameter-store:
+    key: "value"
+  exported-variables:
+    - variable
  build:
    commands:
-     - aws s3 sync --delete . "s3://sikandar-bucket/Github-code" --exclude ".git/*"
+     - aws s3 sync --delete . "s3://$s3Bucket /Github-code" --exclude ".git/*"
  post_build:
    commands:
      - echo "build step done"
