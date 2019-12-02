@@ -1,4 +1,3 @@
-
 Description: VPC Network Stack
 Parameters:
   CidrBlock:
