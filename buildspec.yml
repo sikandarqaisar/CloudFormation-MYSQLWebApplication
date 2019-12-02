@@ -2,7 +2,7 @@ version: 0.2
 phases:
  build:
    commands:
-     - aws s3 sync --delete . "s3://sikandar-bucket/Github-code --exclude ".git/*"
+     - aws s3 sync --delete . "s3://sikandar-bucket/Github-code" --exclude ".git/*"
  post_build:
    commands:
      - echo "build step done"
