@@ -3,6 +3,7 @@ phases:
  build:
    commands:
      - aws s3 sync --delete . "s3://$s3Bucket/Github-code" --exclude ".git/*"
- post_build:
+     - aws cloudfront create-invalidation --distribution-id $Id --paths /$path1 /path2
+post_build:
    commands:
      - echo "build step done"
