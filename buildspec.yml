@@ -2,7 +2,10 @@ version: 0.2
 phases:
  build:
    commands:
-     - aws cloudfront create-invalidation --distribution-id $Id --paths /$path1 /path2
+     - echo $CloudfrontId
+     - echo $path1
+     - echo $path2
+     - aws cloudfront create-invalidation --distribution-id $CloudfrontId --paths /$path1 /$path2
 post_build:
    commands:
      - echo "build step done"
